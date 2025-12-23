@@ -18,19 +18,10 @@ A Pelican plugin that provides a graphical editor for Minecraft `server.properti
 
 Once installed and enabled, users can access the server properties editor from the server management page in Pelican. The interface provides an easy way to modify common Minecraft server settings without directly editing the `server.properties` file.
 
-## Requirements
-
-- Pelican Panel
-- Minecraft server integration
-
 ## Author
 
 Fritz
 
-## License
+<img width="2559" height="1389" alt="image" src="https://github.com/user-attachments/assets/5be9d2c7-4872-4829-9a65-1e13510108ce" />
+<img width="2559" height="1389" alt="image" src="https://github.com/user-attachments/assets/4adb5ad3-64a0-4085-b935-df3662d7627d" />
 
-See LICENSE file in the plugins directory.
-
-## Repository
-
-[GitHub](https://github.com/Fritztechnic/pelican-property-editor)
