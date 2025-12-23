@@ -62,6 +62,8 @@ final class ServerProperties extends ServerFormPage
     public $sync_chunk_writes;
     public $query_port;
 
+    public array $existingProperties = [];
+
     public function mount(): void
     {
         parent::mount();
@@ -110,93 +112,103 @@ final class ServerProperties extends ServerFormPage
 
     public function form(Schema $schema): Schema
     {
+        $basicFields = array_filter([
+            in_array('motd', $this->existingProperties) ? TextInput::make('motd')->label('Server Message (motd)')->helperText('Shown in the server list.')->prefixIcon('tabler-chat') : null,
+            in_array('max-players', $this->existingProperties) || in_array('max_players', $this->existingProperties) ? TextInput::make('max_players')->label('Max Players')->numeric()->minValue(0)->prefixIcon('tabler-users') : null,
+            in_array('online-mode', $this->existingProperties) || in_array('online_mode', $this->existingProperties) ? Toggle::make('online_mode')->label('Online Mode') : null,
+            in_array('enable-query', $this->existingProperties) || in_array('enable_query', $this->existingProperties) ? Toggle::make('enable_query')->label('Enable Query')->helperText('Allow Game Query (server list stats).') : null,
+            in_array('enable-rcon', $this->existingProperties) || in_array('enable_rcon', $this->existingProperties) ? Toggle::make('enable_rcon')->label('Enable RCON') : null,
+        ]);
+
+        $gameplayFields = array_filter([
+            in_array('difficulty', $this->existingProperties) ? Select::make('difficulty')->label('Difficulty')->options([
+                'peaceful' => 'Peaceful',
+                'easy' => 'Easy',
+                'normal' => 'Normal',
+                'hard' => 'Hard',
+            ])->default('normal') : null,
+            in_array('gamemode', $this->existingProperties) ? Select::make('gamemode')->label('Default Gamemode')->options([
+                'survival' => 'Survival',
+                'creative' => 'Creative',
+                'adventure' => 'Adventure',
+                'spectator' => 'Spectator',
+            ])->default('survival') : null,
+            in_array('force-gamemode', $this->existingProperties) || in_array('force_gamemode', $this->existingProperties) ? Toggle::make('force_gamemode')->label('Force Gamemode') : null,
+            in_array('hardcore', $this->existingProperties) ? Toggle::make('hardcore')->label('Hardcore') : null,
+            in_array('pvp', $this->existingProperties) ? Toggle::make('pvp')->label('PVP') : null,
+            in_array('spawn-monsters', $this->existingProperties) || in_array('spawn_monsters', $this->existingProperties) ? Toggle::make('spawn_monsters')->label('Spawn Monsters') : null,
+        ]);
+
+        $worldFields = array_filter([
+            in_array('level-name', $this->existingProperties) || in_array('level_name', $this->existingProperties) ? TextInput::make('level_name')->label('Level Name')->prefixIcon('tabler-file-text') : null,
+            in_array('level-seed', $this->existingProperties) || in_array('level_seed', $this->existingProperties) ? TextInput::make('level_seed')->label('Level Seed')->prefixIcon('tabler-hash') : null,
+            in_array('level-type', $this->existingProperties) || in_array('level_type', $this->existingProperties) ? TextInput::make('level_type')->label('Level Type')->prefixIcon('tabler-cube') : null,
+            in_array('view-distance', $this->existingProperties) || in_array('view_distance', $this->existingProperties) ? TextInput::make('view_distance')->label('View Distance')->numeric()->minValue(2)->prefixIcon('tabler-eye') : null,
+            in_array('spawn-protection', $this->existingProperties) || in_array('spawn_protection', $this->existingProperties) ? TextInput::make('spawn_protection')->label('Spawn Protection')->numeric()->minValue(0)->prefixIcon('tabler-shield-star') : null,
+        ]);
+
+        $networkFields = array_filter([
+            in_array('server-port', $this->existingProperties) || in_array('server_port', $this->existingProperties) ? TextInput::make('server_port')->label('Server Port')->numeric()->minValue(0)->prefixIcon('tabler-network') : null,
+            in_array('query.port', $this->existingProperties) || in_array('query_port', $this->existingProperties) ? TextInput::make('query_port')->label('Query Port')->numeric()->minValue(0)->prefixIcon('tabler-network') : null,
+            in_array('rcon.password', $this->existingProperties) || in_array('rcon_password', $this->existingProperties) ? TextInput::make('rcon_password')->label('RCON Password')->prefixIcon('tabler-key') : null,
+        ]);
+
+        $advancedFields = array_filter([
+            in_array('network-compression-threshold', $this->existingProperties) || in_array('network_compression_threshold', $this->existingProperties) ? TextInput::make('network_compression_threshold')->label('Network Compression Threshold')->numeric()->prefixIcon('tabler-arrows-merge') : null,
+            in_array('max-tick-time', $this->existingProperties) || in_array('max_tick_time', $this->existingProperties) ? TextInput::make('max_tick_time')->label('Max Tick Time')->numeric()->prefixIcon('tabler-clock') : null,
+            in_array('enable-command-block', $this->existingProperties) || in_array('enable_command_block', $this->existingProperties) ? Toggle::make('enable_command_block')->label('Enable Command Block') : null,
+            in_array('allow-flight', $this->existingProperties) || in_array('allow_flight', $this->existingProperties) ? Toggle::make('allow_flight')->label('Allow Flight') : null,
+            in_array('allow-nether', $this->existingProperties) || in_array('allow_nether', $this->existingProperties) ? Toggle::make('allow_nether')->label('Allow Nether') : null,
+            Textarea::make('raw')->label('Raw server.properties')->rows(12)->helperText('Advanced: edit the raw file directly')->columnSpanFull(),
+        ]);
+
         return parent::form($schema)
-            ->components([
-                Section::make('Basic')
+            ->components(array_filter([
+                !empty($basicFields) ? Section::make('Basic')
                     ->icon('tabler-info-circle')
                     ->columnSpanFull()
                     ->schema([
                         Fieldset::make()->columnSpanFull()->schema([
-                            Grid::make()->columns(2)->schema([
-                                TextInput::make('motd')->label('Server Message (motd)')->helperText('Shown in the server list.')->prefixIcon('tabler-chat'),
-                                TextInput::make('max_players')->label('Max Players')->numeric()->minValue(0)->prefixIcon('tabler-users'),
-                                Toggle::make('online_mode')->label('Online Mode'),
-                                Toggle::make('enable_query')->label('Enable Query')->helperText('Allow Game Query (server list stats).'),
-                                Toggle::make('enable_rcon')->label('Enable RCON'),
-                            ]),
+                            Grid::make()->columns(2)->schema($basicFields),
                         ]),
-                    ]),
+                    ]) : null,
 
-                Section::make('Gameplay')
+                !empty($gameplayFields) ? Section::make('Gameplay')
                     ->icon('tabler-sword')
                     ->columnSpanFull()
                     ->schema([
                         Fieldset::make()->columnSpanFull()->schema([
-                            Grid::make()->columns(3)->schema([
-                                Select::make('difficulty')->label('Difficulty')->options([
-                                    'peaceful' => 'Peaceful',
-                                    'easy' => 'Easy',
-                                    'normal' => 'Normal',
-                                    'hard' => 'Hard',
-                                ])->default('normal'),
-                                Select::make('gamemode')->label('Default Gamemode')->options([
-                                    'survival' => 'Survival',
-                                    'creative' => 'Creative',
-                                    'adventure' => 'Adventure',
-                                    'spectator' => 'Spectator',
-                                ])->default('survival'),
-                                Toggle::make('force_gamemode')->label('Force Gamemode'),
-                                Toggle::make('hardcore')->label('Hardcore'),
-                                Toggle::make('pvp')->label('PVP'),
-                                Toggle::make('spawn_monsters')->label('Spawn Monsters'),
-                            ]),
+                            Grid::make()->columns(3)->schema($gameplayFields),
                         ]),
-                    ]),
+                    ]) : null,
 
-                Section::make('World')
+                !empty($worldFields) ? Section::make('World')
                     ->icon('tabler-world')
                     ->columnSpanFull()
                     ->schema([
                         Fieldset::make()->columnSpanFull()->schema([
-                            Grid::make()->columns(3)->schema([
-                                TextInput::make('level_name')->label('Level Name')->prefixIcon('tabler-file-text'),
-                                TextInput::make('level_seed')->label('Level Seed')->prefixIcon('tabler-hash'),
-                                TextInput::make('level_type')->label('Level Type')->prefixIcon('tabler-cube'),
-                                TextInput::make('view_distance')->label('View Distance')->numeric()->minValue(2)->prefixIcon('tabler-eye'),
-                                TextInput::make('spawn_protection')->label('Spawn Protection')->numeric()->minValue(0)->prefixIcon('tabler-shield-star'),
-                            ]),
+                            Grid::make()->columns(3)->schema($worldFields),
                         ]),
-                    ]),
+                    ]) : null,
 
-                Section::make('Network')
+                !empty($networkFields) ? Section::make('Network')
                     ->icon('tabler-network')
                     ->columnSpanFull()
                     ->schema([
                         Fieldset::make()->columnSpanFull()->schema([
-                            Grid::make()->columns(3)->schema([
-                                TextInput::make('server_port')->label('Server Port')->numeric()->minValue(0)->prefixIcon('tabler-network'),
-                                TextInput::make('query_port')->label('Query Port')->numeric()->minValue(0)->prefixIcon('tabler-network'),
-                                TextInput::make('rcon_password')->label('RCON Password')->prefixIcon('tabler-key'),
-                            ]),
+                            Grid::make()->columns(3)->schema($networkFields),
                         ]),
-                    ]),
+                    ]) : null,
 
                 Section::make('Advanced & Raw')
                     ->icon('tabler-cog')
                     ->columnSpanFull()
                     ->schema([
                         Fieldset::make()->columnSpanFull()->schema([
-                            Grid::make()->columns(3)->schema([
-                                TextInput::make('network_compression_threshold')->label('Network Compression Threshold')->numeric()->prefixIcon('tabler-arrows-merge'),
-                                TextInput::make('max_tick_time')->label('Max Tick Time')->numeric()->prefixIcon('tabler-clock'),
-                                Toggle::make('enable_command_block')->label('Enable Command Block'),
-                                Toggle::make('allow_flight')->label('Allow Flight'),
-                                Toggle::make('allow_nether')->label('Allow Nether'),
-                                Textarea::make('raw')->label('Raw server.properties')->rows(12)->helperText('Advanced: edit the raw file directly')->columnSpanFull(),
-                            ]),
+                            Grid::make()->columns(3)->schema($advancedFields),
                         ]),
                     ]),
-            ]);
+            ]));
     }
 
     private function loadProperties(): void
@@ -215,6 +227,8 @@ final class ServerProperties extends ServerFormPage
         }
 
         $props = $this->parseProperties($content);
+
+        $this->existingProperties = array_keys($props);
 
         $this->motd = $props['motd'] ?? '';
         $this->max_players = $props['max-players'] ?? $props['max_players'] ?? null;
