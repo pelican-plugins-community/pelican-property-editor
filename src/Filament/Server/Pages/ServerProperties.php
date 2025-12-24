@@ -249,6 +249,8 @@ final class ServerProperties extends ServerFormPage
         'server_port' => [TextInput::class, ['label' => 'Server Port', 'numeric' => true, 'minValue' => 0, 'prefixIcon' => 'tabler-network']],
         'query_port' => [TextInput::class, ['label' => 'Query Port', 'numeric' => true, 'minValue' => 0, 'prefixIcon' => 'tabler-network']],
         'rcon_password' => [TextInput::class, ['label' => 'RCON Password', 'prefixIcon' => 'tabler-key']],
+        'rcon_port' => [TextInput::class, ['label' => 'RCON Port', 'numeric' => true]],
+        'server_ip' => [TextInput::class, ['label' => 'Server IP']],
         'network_compression_threshold' => [TextInput::class, ['label' => 'Network Compression Threshold', 'numeric' => true, 'prefixIcon' => 'tabler-arrows-merge']],
         'max_tick_time' => [TextInput::class, ['label' => 'Max Tick Time', 'numeric' => true, 'prefixIcon' => 'tabler-clock']],
         'enable_command_block' => [Toggle::class, ['label' => 'Enable Command Block']],
