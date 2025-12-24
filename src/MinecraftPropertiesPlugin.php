@@ -33,5 +33,12 @@ class MinecraftPropertiesPlugin implements Plugin
         }
     }
 
-    public function boot(Panel $panel): void {}
+    public function boot(Panel $panel): void
+    {
+        try {
+            app('translator')->addNamespace('minecraft-properties', base_path('lang'));
+        } catch (\InvalidArgumentException $e) {
+            // Namespace already registered
+        }
+    }
 }
