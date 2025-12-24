@@ -356,6 +356,39 @@ final class ServerProperties extends ServerFormPage
         return is_null($value) ? $default : filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 
+    private function translateFieldKey(string $field, ?string $suffix, string $fallback): string
+    {
+        // Prefer plugin-provided translations in resources/lang/{locale}.php
+        $locale = app()->getLocale() ?: config('app.locale');
+        $candidates = [$locale];
+        if (str_contains($locale, '-')) {
+            $candidates[] = explode('-', $locale)[0];
+        }
+        $candidates[] = 'en';
+
+        $key = $suffix ? "{$field}_{$suffix}" : $field;
+
+        foreach ($candidates as $loc) {
+            $path = __DIR__ . '/../../../../resources/lang/' . $loc . '.php';
+            if (!file_exists($path)) continue;
+            try {
+                $translations = include $path;
+                if (is_array($translations) && array_key_exists($key, $translations)) {
+                    return $translations[$key];
+                }
+            } catch (\Throwable $e) {
+                // ignore and try next candidate
+            }
+        }
+
+        // fall back to Laravel translation if available
+        $laravelKey = $suffix ? "minecraft-properties::{$field}_{$suffix}" : "minecraft-properties::{$field}";
+        $translated = __($laravelKey);
+        if ($translated !== $laravelKey) return $translated;
+
+        return $fallback;
+    }
+
     private function createComponent(string $field)
     {
         if (!isset($this->componentMapping[$field])) {
@@ -366,6 +399,35 @@ final class ServerProperties extends ServerFormPage
 
         $component = $class::make($field);
         foreach ($options as $key => $value) {
+            // Translate labels and helper texts where appropriate
+            if ($key === 'label') {
+                $label = $this->translateFieldKey($field, 'label', $value);
+                if (method_exists($component, 'label')) {
+                    $component->label($label);
+                }
+                continue;
+            }
+
+            if ($key === 'helperText') {
+                $helper = $this->translateFieldKey($field, 'helper', $value);
+                if (method_exists($component, 'helperText')) {
+                    $component->helperText($helper);
+                }
+                continue;
+            }
+
+            if ($key === 'options' && is_array($value)) {
+                // translate select option labels, e.g. difficulty_peaceful
+                $translatedOptions = [];
+                foreach ($value as $optKey => $optLabel) {
+                    $translatedOptions[$optKey] = $this->translateFieldKey($field . '_' . $optKey, null, $optLabel);
+                }
+                if (method_exists($component, 'options')) {
+                    $component->options($translatedOptions);
+                }
+                continue;
+            }
+
             if (method_exists($component, $key)) {
                 $component->$key($value);
             }
@@ -431,13 +493,20 @@ final class ServerProperties extends ServerFormPage
         $networkComponents = array_map(fn($field) => $this->createComponent($field), array_filter(self::NETWORK_FIELDS, fn($field) => $this->isPropertyAvailable($field)));
 
         $advancedComponents = array_map(fn($field) => $this->createComponent($field), array_filter(self::ADVANCED_FIELDS, fn($field) => $this->isPropertyAvailable($field)));
-        $advancedComponents[] = Textarea::make('raw')->label('Raw server.properties')->rows(12)->helperText('Advanced: edit the raw file directly')->columnSpanFull()->reactive()->debounce(500)->afterStateUpdated(function ($state) {
+        $advancedComponents[] = Textarea::make('raw')
+            ->label($this->translateFieldKey('raw', 'label', 'Raw server.properties'))
+            ->rows(12)
+            ->helperText($this->translateFieldKey('raw', 'helper', 'Advanced: edit the raw file directly'))
+            ->columnSpanFull()
+            ->reactive()
+            ->debounce(500)
+            ->afterStateUpdated(function ($state) {
             $this->syncFromRaw($state);
         });
 
         return parent::form($schema)
             ->components([
-                Section::make('Basic')
+                Section::make($this->translateFieldKey('section_basic', null, 'Basic'))
                     ->icon('tabler-info-circle')
                     ->columnSpanFull()
                     ->schema([
@@ -446,7 +515,7 @@ final class ServerProperties extends ServerFormPage
                         ]),
                     ]),
 
-                Section::make('Gameplay')
+                Section::make($this->translateFieldKey('section_gameplay', null, 'Gameplay'))
                     ->icon('tabler-sword')
                     ->columnSpanFull()
                     ->schema([
@@ -455,7 +524,7 @@ final class ServerProperties extends ServerFormPage
                         ]),
                     ]),
 
-                Section::make('World')
+                Section::make($this->translateFieldKey('section_world', null, 'World'))
                     ->icon('tabler-world')
                     ->columnSpanFull()
                     ->schema([
@@ -464,7 +533,7 @@ final class ServerProperties extends ServerFormPage
                         ]),
                     ]),
 
-                Section::make('Network')
+                Section::make($this->translateFieldKey('section_network', null, 'Network'))
                     ->icon('tabler-network')
                     ->columnSpanFull()
                     ->schema([
@@ -473,7 +542,7 @@ final class ServerProperties extends ServerFormPage
                         ]),
                     ]),
 
-                Section::make('Advanced & Raw')
+                Section::make($this->translateFieldKey('section_advanced_raw', null, 'Advanced & Raw'))
                     ->icon('tabler-cog')
                     ->columnSpanFull()
                     ->schema([
@@ -486,14 +555,14 @@ final class ServerProperties extends ServerFormPage
 
     public function getHeading(): ?string
     {
-        return 'Minecraft Server Properties';
+        return $this->translateFieldKey('heading', null, 'Minecraft Server Properties');
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('save')
-                ->label('Save')
+                ->label($this->translateFieldKey('action_save', null, 'Save'))
                 ->color('primary')
                 ->icon('tabler-device-floppy')
                 ->action('save')
