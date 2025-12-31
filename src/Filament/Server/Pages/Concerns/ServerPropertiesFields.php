@@ -80,6 +80,9 @@ trait ServerPropertiesFields
     public $text_filtering_config;
     public $use_native_transport;
 
+    // Raw content for the textarea
+    public $raw;
+
     /** @var array<string,mixed> */
     private array $originalData = [];
     private string $originalRaw = '';
