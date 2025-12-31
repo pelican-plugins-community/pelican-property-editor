@@ -104,7 +104,7 @@ trait ServerPropertiesFields
 
     private PropertiesService $propertiesService;
 
-    public function __construct()
+    protected function initializePropertiesService(): void
     {
         $this->propertiesService = new PropertiesService(
             $this->propertyMapping,

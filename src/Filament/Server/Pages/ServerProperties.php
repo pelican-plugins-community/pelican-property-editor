@@ -60,6 +60,8 @@ final class ServerProperties extends ServerFormPage
     {
         parent::mount();
 
+        $this->initializePropertiesService();
+
         $this->loadProperties();
 
         $fields = $this->getAllFields();
@@ -212,7 +214,7 @@ final class ServerProperties extends ServerFormPage
                 ->danger()
                 // Surface a helpful message in the UI. Keep the exception
                 // message short to avoid leaking sensitive details.
-                ->title('Failed to save server.properties: ' . $e->getMessage())
+                ->title('Failed to save server.properties. Please check your configuration and try again.')
                 ->send();
         }
     }
